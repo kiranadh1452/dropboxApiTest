@@ -13,10 +13,10 @@ let dropboxSignInPage, token, folderName, newLink;
  */
 Given('the user has entered username {string} and password {string}', async function (username, password) {
 
-  const unameSelector = "//input[@id='mod-login-username']"
+  const unameSelector = "//input[@id='mod-login-username']";
   await page.fill(unameSelector, username);
 
-  const passwordSelector = "//input[@id='mod-login-password']"
+  const passwordSelector = "//input[@id='mod-login-password']";
   await page.fill(passwordSelector, password);
 
   const loginBtnLocator = await page.locator("//button[@class='btn btn-primary btn-block btn-large login-button']");
