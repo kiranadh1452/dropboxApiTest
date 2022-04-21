@@ -10,9 +10,11 @@
     "@cucumber/cucumber": "^7.3.1",
     "@cucumber/pretty-formatter": "^1.0.0-alpha.1",
     "@playwright/test": "^1.17.1",
+    "mysql2": "^2.3.3",
     "playwright": "^1.17.1"
   },
   "scripts": {
+    "server": "node server.js",
     "test": "cucumber-js --require cucumber.config.js --require tests/acceptance/stepDefinitions/**/*.js --format @cucumber/pretty-formatter"
   },
   "author": "",

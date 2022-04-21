@@ -1,0 +1,1 @@
+require('./tests/acceptance/databaseHelper/deleteInstances.js');
