@@ -1,15 +1,16 @@
-const { expect } = require('@playwright/test');
 const {HomePage} = require('../pageObjects/HomePage.js');
 const {LoginPage} = require('../pageObjects/LoginPage.js');
+const {DropboxAuthPage} = require('../pageObjects/DropboxAuthPage.js');
 const {DropboxJoomlaPage} = require('../pageObjects/DropboxJoomlaPage.js');
 const {Given, When, Then, And, But } = require('@cucumber/cucumber');
 
 const homePage = new HomePage();
 const loginPage = new LoginPage();
+const dropboxAuth = new DropboxAuthPage();
 const dropboxJoomla = new DropboxJoomlaPage();
-const joomlaHome = 'http://joomla.test';
 
-let dropboxSignInPage, token, folderName, newLink;
+let dropboxSignInPage, token, newLink;
+const joomlaHome = 'http://joomla.test';
 
 /**
  * checkDropbox.feature
@@ -49,7 +50,7 @@ Given('the user has seen {string} heading in {string} page', async function (pag
 
 When('the user creates a new dropbox folder as {string}', async function (folderName) {
   await dropboxJoomla.clickOnCreateNew();
-  await dropboxJoomla.fillupFolderName();
+  await dropboxJoomla.fillupFolderName(folderName);
 });
 
 /**
@@ -68,70 +69,39 @@ When('the user saves and connects to dropbox', async function () {
  */
 When('the user enters email {string} and password {string}', async function(email,password){
   //logging in to dropbox
-  await dropboxSignInPage.fill("//div/input[@name='login_email']",email);
-  await dropboxSignInPage.fill("//div/input[@name='login_password']",password);
-  await dropboxSignInPage.locator("//button[@class='login-button signin-button button-primary']").click();
+  await dropboxAuth.loginToDropboxAccount(dropboxSignInPage,email,password);
 
-
-  // granting access
-  const accessGrantSelector = "//button[@name='allow_access']";
-
-  await dropboxSignInPage.waitForSelector(accessGrantSelector,{
-    timeout:100000
-  });
-  
-  const accessGrantLocator = await dropboxSignInPage.locator(accessGrantSelector);
-  // await accessGrantLocator.click();
-  await accessGrantLocator.click(); // due to some issues it is requiring click two times
-
-  //getting the token value for later use 
-  const tokenField = await dropboxSignInPage.locator("//div[@id='auth-code']/input");
-  token = await tokenField.inputValue();
+  token = await dropboxAuth.getToken(dropboxSignInPage);
   
   await dropboxSignInPage.close();
 });
 
 // Enter the token received from dropbox and save it
 When('the user enters the received token in Dropbox Code and saves', async function(){
-  // enter the token in `Dropbox code` field
-  await page.fill("//input[@id='jform_dropbox_secret']",token);
   
-  // save the changes
-  const saveBtn = await page.locator("//div[@id='toolbar-save']/button");
-  await saveBtn.click();
-
-  // among several instances of dropbox, getting the hold on the one we created just now
-  const previewBtn = await page.locator("//table/tbody/tr[last()]/td[last()]/a");
-  newLink = await previewBtn.getAttribute('href');
-
-  /**
-   * Site uses a relative url of format `../*.php?*`
-   * So, removing the first two characters('..') and adding domain(stored in `joomlaHome` variable) ahead of them
-   */
-  newLink = newLink.slice(2);
-  newLink = joomlaHome+newLink;
+  // fill up token received and make a connection
+  await dropboxJoomla.makeDropboxConnection(token);
 
 });
 
 Then('the user should see {string} in folder name', async function(folderName){
-  const folderNameLocator = await page.locator("//table/tbody/tr[last()]/td[3]");
-  const folderNameField = await folderNameLocator.innerText();
-
-  if(folderNameField != folderName){
-    throw new Error(`Expected: ${folderName}\nObtained: ${folderNameField}`)
+  const isFolderCreated = await dropboxJoomla.checkForCreatedFolder(folderName);
+  
+  if(! isFolderCreated[0]){
+    throw new Error(`Expected: ${folderName}\nObtained: ${isFolderCreated[1]}`);
   }
 
+  // link to preview the above created dropbox instance in joomla
+  newLink = await dropboxJoomla.returnPreviewLink(joomlaHome);
+  console.log(newLink);
   await page.goto(newLink);
 });
 
 Then('the user should see {string} message', async function(message){
-  const msgLocator = await page.locator("//div[@class='dropbox_content']/h1");
-  const msg = await msgLocator.innerText();
+  const response = await dropboxJoomla.verifyDropboxFolder(message);
 
-  console.log(msg);
-
-  if(msg != message){
-    throw new Error(`Expected: '${message}'\nObtained: '${msg}'`);
+  if(! response[0]){
+    throw new Error(`Expected: '${message}'\nObtained: '${response[1]}'`);
   }
 });
 
