@@ -8,7 +8,7 @@ setDefaultTimeout(1000*1000);
 
 BeforeAll(async function(){
   global.browser = await chromium.launch({
-    slowMo: 100,
+    slowMo: 500,
     headless: false,
     channel: "chrome"
   });

@@ -1,5 +1,12 @@
-const {Given, When, Then, And, But } = require('@cucumber/cucumber');
 const { expect } = require('@playwright/test');
+const {HomePage} = require('../pageObjects/HomePage.js');
+const {LoginPage} = require('../pageObjects/LoginPage.js');
+const {DropboxJoomlaPage} = require('../pageObjects/DropboxJoomlaPage.js');
+const {Given, When, Then, And, But } = require('@cucumber/cucumber');
+
+const homePage = new HomePage();
+const loginPage = new LoginPage();
+const dropboxJoomla = new DropboxJoomlaPage();
 const joomlaHome = 'http://joomla.test';
 
 let dropboxSignInPage, token, folderName, newLink;
@@ -12,57 +19,44 @@ let dropboxSignInPage, token, folderName, newLink;
  * Enter username, password and click on login button
  */
 Given('the user has entered username {string} and password {string}', async function (username, password) {
-
-  const unameSelector = "//input[@id='mod-login-username']";
-  await page.fill(unameSelector, username);
-
-  const passwordSelector = "//input[@id='mod-login-password']";
-  await page.fill(passwordSelector, password);
-
-  const loginBtnLocator = await page.locator("//button[@class='btn btn-primary btn-block btn-large login-button']");
-  await loginBtnLocator.click();
+  await loginPage.login(username,password);
 });
 
 /**
  * Click on `components`
  */
 Given('the user has clicked on components', async function () {
-  const componentBtn = await page.locator("//div/ul[@id='menu']/li[5]/a");
-  await componentBtn.click();
-
-  const menuLocator = await page.locator("//div/ul[@id='menu']/li[5]/ul/li[3]/a");
-  await menuLocator.click();
-
+    await homePage.clickOnComponentsSection();
+    await homePage.clickOnDropboxSection();
 });
 
 /**
- * Dropbox option should be visible
+ * This works for both Homepage and Dropbox Page as the title locator is same in both cases
  */
-Given('the user has seen {string} heading', async function (pageTitle) {
-  const headingLocator = await page.locator("//h1[@class='page-title']");
+Given('the user has seen {string} heading in {string} page', async function (pageHeader, currLocation){
 
-  const headingText = await headingLocator.innerText();
-  
-  if(headingText != pageTitle){
-    throw new Error('Expected value ' + pageTitle + " but found "+headingText);
+  if(currLocation=='Home'){
+    await homePage.checkForHomePage(pageHeader);
   }
+
+  else if(currLocation=='Dropbox'){
+    await dropboxJoomla.checkForDropboxHeader(pageHeader);
+  }
+
+  else throw new Error(`There isn't any ${currLocation} page`);
 });
 
 
 When('the user creates a new dropbox folder as {string}', async function (folderName) {
-  const newdropboxBtn = await page.locator("//div[@id='toolbar-new']/button");
-  await newdropboxBtn.click();
-
-  const folderNameField = await page.locator("//input[@id='jform_folder']");
-  await page.fill("//input[@id='jform_folder']", folderName);
+  await dropboxJoomla.clickOnCreateNew();
+  await dropboxJoomla.fillupFolderName();
 });
 
 /**
  * save dropbox, then open a new page(dropbox authorization page) to setup connection
  */
 When('the user saves and connects to dropbox', async function () {
-  const saveBtn = await page.locator("//div[@id='toolbar-apply']/button");
-  await saveBtn.click();
+  await dropboxJoomla.clickOnSaveBtn();
 
   //creating a new page to perform authorization from dropbox side
   dropboxSignInPage = await context.newPage();
@@ -87,7 +81,7 @@ When('the user enters email {string} and password {string}', async function(emai
   });
   
   const accessGrantLocator = await dropboxSignInPage.locator(accessGrantSelector);
-  await accessGrantLocator.click();
+  // await accessGrantLocator.click();
   await accessGrantLocator.click(); // due to some issues it is requiring click two times
 
   //getting the token value for later use 

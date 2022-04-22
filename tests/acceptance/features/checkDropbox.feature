@@ -7,9 +7,9 @@ Feature: Check dropbox extension
     Scenario: Dropbox isnot installed
       Given the user has browsed to login page 
       And the user has entered username 'kiranadh' and password 'kiran1234'
-      And the user has seen ' Control Panel' heading
+      And the user has seen ' Control Panel' heading in 'Home' page
       And the user has clicked on components
-      And the user has seen ' Dropbox Manager' heading
+      And the user has seen ' Dropbox Manager' heading in 'Dropbox' page
 
       When the user creates a new dropbox folder as 'kiran-joomla'
       And the user saves and connects to dropbox
